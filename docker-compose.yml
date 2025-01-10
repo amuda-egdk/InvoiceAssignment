@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  invoice:
+    build:
+      context: .
+    container_name: Invoices
+    depends_on:
+      - db
+    environment:
+      - DATABASE_DRIVER=org.postgresql.Driver
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=12345
+      - DATABASE_URL=jdbc:postgresql://db:5432/Invoice
+    ports:
+      - "8080:8080"
+
+  db:
+    image: postgres
+    container_name: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_DB=Invoice
+    ports:
+      - "5432:5432"
