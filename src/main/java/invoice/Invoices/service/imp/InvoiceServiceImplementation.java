@@ -25,7 +25,7 @@ public class InvoiceServiceImplementation implements InvoiceService {
 	public Map<String, Integer> addInvoice(InvoiceDto invoiceDto) throws Exception {
 
 		if (invoiceDto == null) {
-			throw new Exception("Enter the data");
+			throw new Exception("No data is present");
 		}
 
 		if (invoiceDto.getAmount() <= 0) {
@@ -33,7 +33,7 @@ public class InvoiceServiceImplementation implements InvoiceService {
 		}
 
 		if (invoiceDto.getDueDate() == null) {
-			throw new Exception("Enter the Date");
+			throw new Exception("No date is been added");
 		}
 
 		int id = invoiceRepo.addInvoice(invoiceDto);
@@ -54,7 +54,7 @@ public class InvoiceServiceImplementation implements InvoiceService {
 		double map = invoiceRepo.updateAmount(invoicePayDto);
 		
 		if(invoicePayDto.getPaidAmount() <= 0) {
-			throw new Exception("Enter the valid paid amount");
+			throw new Exception("Invalid paid amount");
 		}
 		return new HashMap<>() {
 			{
@@ -71,7 +71,7 @@ public class InvoiceServiceImplementation implements InvoiceService {
 
 		if (dueDto.getLateFee() == 0) {
 
-			throw new Exception("Add a valid value for late fee");
+			throw new Exception("Invalid value for late fee");
 		}
 		return invoiceRepo.Overdue(dueDto);
 	}
