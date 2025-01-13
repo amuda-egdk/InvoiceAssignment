@@ -62,4 +62,5 @@ Enums:
 
 - InvoiceEnum: Defines the possible statuses of an invoice (`PENDING`, `PAID`, `VOID`).
 
-## Implemented Docker and Swagger.
+
+-Implemented Docker and Swagger.
