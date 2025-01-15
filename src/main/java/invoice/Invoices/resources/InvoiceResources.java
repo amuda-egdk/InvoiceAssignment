@@ -51,8 +51,9 @@ public class InvoiceResources {
 
 	@POST
 	@Path("/process-overdue")
-	public List<Invoice> OverDue(DueDto dueDto) throws Exception {
-		return invoiceservice.OverDue(dueDto);
+	public Response OverDue(DueDto dueDto) throws Exception {
+		invoiceservice.OverDue(dueDto);
+		return Response.status(Response.Status.ACCEPTED).entity("Overdue has been successfully processed").build();
 	}
 
 }
