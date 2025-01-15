@@ -90,8 +90,9 @@ public class InvoiceRepository implements InvoiceDao {
 
 	@Override
 	public List<Invoice> Overdue(DueDto dueDto) {
-		final String GET_ALL_INVOICES = "SELECT * FROM INVOICE WHERE status = 'PENDING'";
-		List<Invoice> allInvoices = database.findAll(Invoice.class, GET_ALL_INVOICES);
+		final String GET_ALL_INVOICES = "SELECT * FROM INVOICE WHERE status = 'PENDING' AND due_date < ?";
+		Date currDate = new Date();
+		List<Invoice> allInvoices = database.findAll(Invoice.class, SqlQuery.query(GET_ALL_INVOICES, currDate));
 		for (Invoice invoice : allInvoices) {
 			final String UPDATE_INVOICE = "UPDATE INVOICE SET status = :status where id = :id";
 			Map<String, Object> params = new HashMap<>();
