@@ -2,6 +2,8 @@ package invoice.Invoices.resources;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -26,98 +28,160 @@ import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 @ExtendWith(DropwizardExtensionsSupport.class)
 public class InvoiceServiceImplementationTest {
 
-	private static InvoiceServiceImplementation invoiceService;
-	private static Database db = TestDatabaseProvider.databaseForProperties("db.properties");
+    private static InvoiceServiceImplementation invoiceService;
+    private static Database db = TestDatabaseProvider.databaseForProperties("db.properties");
 
-	@BeforeAll
-	public static void setUp() throws Exception {
-		invoiceService = new InvoiceServiceImplementation(db);
-		Date date = new Date(1731993685000L);
-		LocalDate localDate = LocalDate.ofInstant(date.toInstant(), ZoneId.systemDefault());
+    @BeforeAll
+    public static void setUp() throws Exception {
+        invoiceService = new InvoiceServiceImplementation(db);
+        Date date = new Date(1731993685000L);
+        LocalDate localDate = LocalDate.ofInstant(date.toInstant(), ZoneId.systemDefault());
 
-		InvoiceDto dto = new InvoiceDto();
-		dto.setDueDate(localDate);
-		dto.setAmount(450);
-		invoiceService.addInvoice(dto);
+        InvoiceDto dto = new InvoiceDto();
+        dto.setDueDate(localDate);
+        dto.setAmount(450);
+        invoiceService.addInvoice(dto);
+    }
 
-	}
+    @AfterAll
+    public static void afterSetUp() {
+        db.update("TRUNCATE TABLE invoice RESTART IDENTITY");
+    }
 
-	@AfterAll
-	public static void afterSetUp() {
-		db.update("TRUNCATE TABLE invoice RESTART IDENTITY");
-	}
+    @Test
+    public void addInvoice() throws Exception {
+        Date date = new Date(1731993685000L);
+        LocalDate localDate = LocalDate.ofInstant(date.toInstant(), ZoneId.systemDefault());
 
-	@Test
-	public void addInvoice() throws Exception {
+        InvoiceDto dto = new InvoiceDto();
+        dto.setDueDate(localDate);
+        dto.setAmount(450);
 
-	    Date date = new Date(1731993685000L);
-	    LocalDate localDate = LocalDate.ofInstant(date.toInstant(), ZoneId.systemDefault());
+        int expectedId = 2;
 
-	    InvoiceDto dto = new InvoiceDto();
-	    dto.setDueDate(localDate);
-	    dto.setAmount(450);
+        Map<String, Integer> generatedIdMap = invoiceService.addInvoice(dto);
+        int generatedId = generatedIdMap.get("id");
 
-	    int expectedId = 2;
+        assertThat(expectedId).isEqualTo(generatedId);
+        assertNotNull(generatedIdMap);
+    }
 
-	    Map<String, Integer> generatedIdMap = invoiceService.addInvoice(dto);
-	    int generatedId = generatedIdMap.get("id");
+    @Test
+    public void getAllInvoices() throws Exception {
+        Date date = new Date(1731993685000L);
+        LocalDate localDate = LocalDate.ofInstant(date.toInstant(), ZoneId.systemDefault());
 
-	    assertThat(expectedId).isEqualTo(generatedId);
-	    assertNotNull(generatedIdMap);
-	}
+        InvoiceDto dto = new InvoiceDto();
+        dto.setDueDate(localDate);
+        dto.setAmount(450);
+        invoiceService.addInvoice(dto);
 
-	@Test
-	public void getAllInvoices() throws Exception {
-		Date date = new Date(1731993685000L);
-		LocalDate localDate = LocalDate.ofInstant(date.toInstant(), ZoneId.systemDefault());
+        List<Invoice> invoices = invoiceService.getAllInvoices();
 
-		InvoiceDto dto = new InvoiceDto();
-		dto.setDueDate(localDate);
-		dto.setAmount(450);
-		invoiceService.addInvoice(dto);
+        assertNotNull(invoices);
+        assertThat((invoices.size() > 0)).isEqualTo(true);
+    }
 
-		List<Invoice> invoices = invoiceService.getAllInvoices();
+    @Test
+    public void updateAmount() throws Exception {
+        InvoicePayDto payDto = new InvoicePayDto();
+        payDto.setId(1);
+        payDto.setPaidAmount(100);
+        Map<String, Object> result = invoiceService.updateAmount(payDto);
 
-		assertNotNull(invoices);
+        assertNotNull(result);
+        assertThat(result.get("amount")).isEqualTo(350.0);
+    }
 
-		assertThat((invoices.size() > 0)).isEqualTo(true);
-	}
+    @Test
+    public void Overdue() throws Exception {
+        System.out.println("overdue");
+        db.update("TRUNCATE TABLE invoice RESTART IDENTITY");
 
-	@Test
-	public void updateAmount() throws Exception {
+        Date date = new Date(1731993685000L);
+        LocalDate localDate = LocalDate.ofInstant(date.toInstant(), ZoneId.systemDefault());
 
-		InvoicePayDto payDto = new InvoicePayDto();
-		payDto.setId(1);
-		payDto.setPaidAmount(100);
-		Map<String, Object> result = invoiceService.updateAmount(payDto);
+        InvoiceDto dto = new InvoiceDto();
+        dto.setDueDate(localDate);
+        dto.setAmount(450);
+        invoiceService.addInvoice(dto);
 
-		assertNotNull(result);
-		assertThat(result.get("amount")).isEqualTo(350.0);
+        DueDto dueDto = new DueDto();
+        dueDto.setLateFee(100);
+        dueDto.setOverDueDays(10);
 
-	}
+        List<Invoice> overdueInvoices = invoiceService.OverDue(dueDto);
 
-	@Test
-	public void Overdue() throws Exception {
-		System.out.println("overdue");
-		db.update("TRUNCATE TABLE invoice RESTART IDENTITY");
+        Invoice overdueInvoice = overdueInvoices.get(0);
+        System.out.println(overdueInvoices.size());
+        assertThat(overdueInvoice.getAmount()).isEqualTo(550);
+        assertThat(overdueInvoice.getDueDate()).isEqualTo(localDate.plusDays(10));
+    }
 
-		Date date = new Date(1731993685000L);
-		LocalDate localDate = LocalDate.ofInstant(date.toInstant(), ZoneId.systemDefault());
 
-		InvoiceDto dto = new InvoiceDto();
-		dto.setDueDate(localDate);
-		dto.setAmount(450);
-		invoiceService.addInvoice(dto);
+    @Test
+    public void updateAmountWithInvalidPaidAmount() {
+        InvoicePayDto payDto = new InvoicePayDto();
+        payDto.setId(1);
+        payDto.setPaidAmount(0);
 
-		DueDto dueDto = new DueDto();
-		dueDto.setLateFee(100);
-		dueDto.setOverDueDays(10);
+        Exception exception = assertThrows(Exception.class, () -> {
+            invoiceService.updateAmount(payDto);
+        });
 
-		List<Invoice> overdueInvoices = invoiceService.OverDue(dueDto);
+        String expectedMessage = "Enter the valid paid amount";
+        String actualMessage = exception.getMessage();
 
-		Invoice overdueInvoice = overdueInvoices.get(0);
-		System.out.println(overdueInvoices.size());
-		assertThat(overdueInvoice.getAmount()).isEqualTo(550);
-		assertThat(overdueInvoice.getDueDate()).isEqualTo(localDate.plusDays(10));
-	}
+        assertTrue(actualMessage.contains(expectedMessage));
+    }
+
+    @Test
+    public void overdueWithInvalidOverdueDays() {
+        DueDto dueDto = new DueDto();
+        dueDto.setLateFee(100);
+        dueDto.setOverDueDays(0);
+
+        Exception exception = assertThrows(Exception.class, () -> {
+            invoiceService.OverDue(dueDto);
+        });
+
+        String expectedMessage = "Over due days cannot be null or negative";
+        String actualMessage = exception.getMessage();
+
+        assertTrue(actualMessage.contains(expectedMessage));
+    }
+
+    @Test
+    public void overdueWithInvalidLateFee() {
+        DueDto dueDto = new DueDto();
+        dueDto.setLateFee(0);
+        dueDto.setOverDueDays(10);
+
+        Exception exception = assertThrows(Exception.class, () -> {
+            invoiceService.OverDue(dueDto);
+        });
+
+        String expectedMessage = "Add a valid value for late fee";
+        String actualMessage = exception.getMessage();
+
+        assertTrue(actualMessage.contains(expectedMessage));
+    }
+
+
+
+    @Test
+    public void updateAmountExceedingInvoiceAmount() throws Exception {
+        InvoicePayDto payDto = new InvoicePayDto();
+        payDto.setId(1);
+        payDto.setPaidAmount(500);
+
+        Exception exception = assertThrows(Exception.class, () -> {
+            invoiceService.updateAmount(payDto);
+        });
+
+        String expectedMessage = "Paid Amount Exceeds amount";
+        String actualMessage = exception.getMessage();
+
+        assertTrue(actualMessage.contains(expectedMessage));
+    }
 }
